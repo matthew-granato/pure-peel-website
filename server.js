@@ -2293,36 +2293,47 @@ app.post('/api/unsubscribe', apiLimiter, async (req, res) => {
   }
 })
 
-// Email list subscription (Resend + in-code templates; subscribers stored locally)
+// Emails currently being processed — blocks duplicate concurrent signups
+const pendingSubscribes = new Set()
+
 app.post('/api/subscribe', apiLimiter, async (req, res) => {
   const { email, language, source } = req.body
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     return res.status(400).json({ error: 'Invalid email address' })
   }
 
   const normalizedLanguage = language === 'fr' ? 'fr' : 'en'
   const subscribeSource = source === 'popup' ? 'popup' : 'inline'
 
-  // Skip sending if already subscribed (prevents duplicate emails)
-  const alreadySubscribed = await hasSubscriber(email)
-  if (alreadySubscribed) {
+  // Reserve the email before any await, so a second request arriving
+  // mid-send sees it immediately instead of racing past the check
+  if (pendingSubscribes.has(normalizedEmail)) {
     return res.json({ success: true })
   }
+  pendingSubscribes.add(normalizedEmail)
 
   try {
+    // Skip sending if already subscribed (prevents duplicate emails)
+    if (await hasSubscriber(normalizedEmail)) {
+      return res.json({ success: true })
+    }
 
-    console.log('Subscribe: sending welcome email to', email, '| template: list')
-    const welcomeResult = await sendWelcomeEmail(email, { language: normalizedLanguage, source: subscribeSource })
+    console.log('Subscribe: sending welcome email to', normalizedEmail, '| template: list')
+    const welcomeResult = await sendWelcomeEmail(normalizedEmail, { language: normalizedLanguage, source: subscribeSource })
     if (!welcomeResult.success) {
       return res.status(500).json({ error: welcomeResult.error || welcomeResult.reason || 'Email not configured' })
     }
-    await addSubscriber(email, { language: normalizedLanguage, source: subscribeSource })
+    await addSubscriber(normalizedEmail, { language: normalizedLanguage, source: subscribeSource })
     return res.json({ success: true })
   } catch (err) {
     console.error('❌ Welcome email error:', err.message)
     return res.status(500).json({ error: 'Subscription failed' })
+  } finally {
+    pendingSubscribes.delete(normalizedEmail)
   }
 })
+
 
 const startServer = async () => {
   try {
