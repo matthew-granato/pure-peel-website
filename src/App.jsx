@@ -32,6 +32,9 @@ import Unsubscribe from "./pages/Unsubscribe"
 import { seoData, organizationData } from "./utils/seoData"
 import { trackPageView } from "./utils/analytics"
 
+// Set to true to re-enable the wholesale page at /wholesale
+const WHOLESALE_ENABLED = false;
+
 // Helper function to get initial page from pathname
 const getInitialPage = () => {
   const path = window.location.pathname.replace(/\/$/, '')
@@ -67,7 +70,7 @@ const getInitialPage = () => {
     return "faq"
   } else if (path === "/about" || path === "/about.html") {
     return "about"
-  } else if (path === "/wholesale" || path === "/wholesale.html") {
+  } else if (WHOLESALE_ENABLED && (path === "/wholesale" || path === "/wholesale.html")) {
     return "wholesale"
   } else if (path === "/unsubscribe" || path === "/unsubscribe.html") {
     return "unsubscribe"
@@ -86,28 +89,6 @@ export default function App() {
     const handleRoute = (event) => {
       const path = window.location.pathname
       const normalizedPath = path.replace(/\/$/, '')
-
-      const validRoutes = [
-        '/',
-        '/orange',
-        '/pink-orange',
-        '/lime',
-        '/lemon',
-        '/apple',
-        '/pineapple',
-        '/checkout',
-        '/admin',
-        '/order-tracking',
-        '/privacy',
-        '/shipping-returns',
-        '/terms',
-        '/terms-of-service',
-        '/contact',
-        '/faq',
-        '/about',
-        '/wholesale',
-        '/unsubscribe',
-      ]
 
       if (normalizedPath === "/" || normalizedPath === "" || normalizedPath === "/index.html") {
         setCurrentPage("home")
@@ -141,7 +122,7 @@ export default function App() {
         setCurrentPage("faq")
       } else if (normalizedPath === "/about" || normalizedPath === "/about.html") {
         setCurrentPage("about")
-      } else if (normalizedPath === "/wholesale" || normalizedPath === "/wholesale.html") {
+      } else if (WHOLESALE_ENABLED && (normalizedPath === "/wholesale" || normalizedPath === "/wholesale.html")) {
         setCurrentPage("wholesale")
       } else if (normalizedPath === "/unsubscribe" || normalizedPath === "/unsubscribe.html") {
         setCurrentPage("unsubscribe")
