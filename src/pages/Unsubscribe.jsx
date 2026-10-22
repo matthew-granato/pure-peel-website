@@ -24,6 +24,8 @@ export default function Unsubscribe() {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("idle")
   const [queryBanner, setQueryBanner] = useState(null)
+  // True when the page was opened with ?token=… and is about to redirect to the API
+  const [redirecting] = useState(() => new URLSearchParams(window.location.search).has("token"))
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -40,6 +42,9 @@ export default function Unsubscribe() {
   }, [])
 
   const t = (key) => getTranslation(language, `unsubscribePage.${key}`)
+
+  // Unsubscribed either via the email link (?status=ok) or via the form
+  const isDone = status === "success" || queryBanner === "success"
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -74,83 +79,87 @@ export default function Unsubscribe() {
         }}
       >
         <div style={{ maxWidth: "480px", margin: "0 auto" }}>
-          <h1
-            style={{
-              fontFamily: S.serif,
-              fontWeight: 300,
-              fontStyle: "italic",
-              fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
-              color: S.dark,
-              margin: "0 0 12px",
-            }}
-          >
-            {t("title")}
-          </h1>
-          <p style={{ fontFamily: S.sans, fontWeight: 300, fontSize: "0.95rem", color: S.textLight, margin: "0 0 28px", lineHeight: 1.65 }}>
-            {t("intro")}
-          </p>
-
-          {queryBanner === "success" && (
-            <p style={{ ...bannerStyle, borderColor: "rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.08)" }}>{t("success")}</p>
-          )}
-          {queryBanner === "invalid" && (
-            <p style={{ ...bannerStyle, borderColor: "rgba(245,158,11,0.4)", background: "rgba(245,158,11,0.08)" }}>{t("invalid")}</p>
-          )}
-          {(queryBanner === "error" || status === "error") && (
-            <p style={{ ...bannerStyle, borderColor: "rgba(220,38,38,0.35)", background: "rgba(220,38,38,0.06)" }}>{t("error")}</p>
-          )}
-          {status === "success" && !queryBanner && (
-            <p style={{ ...bannerStyle, borderColor: "rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.08)" }}>{t("success")}</p>
-          )}
-
-          {status !== "success" && (
-            <form onSubmit={handleSubmit}>
-              <label htmlFor="unsub-email" style={{ display: "block", fontFamily: S.sans, fontSize: "0.8rem", color: S.textLight, marginBottom: "8px" }}>
-                {t("placeholder")}
-              </label>
-              <input
-                id="unsub-email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+          {!redirecting && (
+            <>
+              <h1
                 style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: "10px",
-                  border: `1px solid ${S.border}`,
-                  fontFamily: S.sans,
-                  fontSize: "0.9rem",
-                  marginBottom: "16px",
-                  boxSizing: "border-box",
-                }}
-              />
-              <button
-                type="submit"
-                disabled={status === "loading"}
-                style={{
-                  fontFamily: S.sans,
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  padding: "14px 28px",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: `linear-gradient(135deg, #f5e6a3 0%, #e8c84a 55%, #d4a832 100%)`,
+                  fontFamily: S.serif,
+                  fontWeight: 300,
+                  fontStyle: "italic",
+                  fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
                   color: S.dark,
-                  cursor: status === "loading" ? "wait" : "pointer",
-                  opacity: status === "loading" ? 0.7 : 1,
+                  margin: "0 0 12px",
                 }}
               >
-                {status === "loading" ? t("submitting") : t("submit")}
-              </button>
-            </form>
-          )}
+                {t("title")}
+              </h1>
 
-          <p style={{ fontFamily: S.sans, fontSize: "0.78rem", color: S.textLight, marginTop: "28px", lineHeight: 1.6 }}>{t("note")}</p>
+              {!isDone && (
+                <p style={{ fontFamily: S.sans, fontWeight: 300, fontSize: "0.95rem", color: S.textLight, margin: "0 0 28px", lineHeight: 1.65 }}>
+                  {t("intro")}
+                </p>
+              )}
+
+              {isDone && (
+                <p style={{ ...bannerStyle, borderColor: "rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.08)" }}>{t("success")}</p>
+              )}
+              {queryBanner === "invalid" && (
+                <p style={{ ...bannerStyle, borderColor: "rgba(245,158,11,0.4)", background: "rgba(245,158,11,0.08)" }}>{t("invalid")}</p>
+              )}
+              {(queryBanner === "error" || status === "error") && (
+                <p style={{ ...bannerStyle, borderColor: "rgba(220,38,38,0.35)", background: "rgba(220,38,38,0.06)" }}>{t("error")}</p>
+              )}
+
+              {!isDone && (
+                <form onSubmit={handleSubmit}>
+                  <label htmlFor="unsub-email" style={{ display: "block", fontFamily: S.sans, fontSize: "0.8rem", color: S.textLight, marginBottom: "8px" }}>
+                    {t("placeholder")}
+                  </label>
+                  <input
+                    id="unsub-email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: "10px",
+                      border: `1px solid ${S.border}`,
+                      fontFamily: S.sans,
+                      fontSize: "0.9rem",
+                      marginBottom: "16px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={status === "loading"}
+                    style={{
+                      fontFamily: S.sans,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      padding: "14px 28px",
+                      borderRadius: "12px",
+                      border: "none",
+                      background: `linear-gradient(135deg, #f5e6a3 0%, #e8c84a 55%, #d4a832 100%)`,
+                      color: S.dark,
+                      cursor: status === "loading" ? "wait" : "pointer",
+                      opacity: status === "loading" ? 0.7 : 1,
+                    }}
+                  >
+                    {status === "loading" ? t("submitting") : t("submit")}
+                  </button>
+                </form>
+              )}
+
+              <p style={{ fontFamily: S.sans, fontSize: "0.78rem", color: S.textLight, marginTop: "28px", lineHeight: 1.6 }}>{t("note")}</p>
+            </>
+          )}
         </div>
       </main>
       <Footer />
